@@ -1,4 +1,4 @@
-// Código FINAL para a função 'api.js'
+// Código FINALÍSSIMO para a função 'api.js' no Netlify
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -13,7 +13,9 @@ exports.handler = async (event) => {
   try {
     const { prompt } = JSON.parse(event.body);
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+    
+    // URL CORRIGIDA COM O MODELO E MÉTODO CORRETOS
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:streamGenerateContent?key=${apiKey}`;
 
     const geminiResponse = await fetch(url, {
       method: 'POST',
@@ -21,14 +23,28 @@ exports.handler = async (event) => {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] } ),
     });
 
-    const data = await geminiResponse.json();
+    const responseText = await geminiResponse.text();
 
     if (!geminiResponse.ok) {
-      console.error("Erro da API Gemini:", data);
-      return { statusCode: geminiResponse.status, headers, body: JSON.stringify(data) };
+      console.error("Erro da API Gemini:", responseText);
+      return { statusCode: geminiResponse.status, headers, body: responseText };
     }
+    
+    // A resposta de 'streamGenerateContent' é um JSON um pouco diferente.
+    // Precisamos processá-lo para extrair o texto.
+    const parts = JSON.parse(responseText.replace(/^\[|\]$/g, '')); // Remove colchetes de array
+    const text = parts.candidates[0].content.parts[0].text;
 
-    return { statusCode: 200, headers, body: JSON.stringify(data) };
+    // Retornamos no formato que o frontend espera
+    const finalResponse = {
+      candidates: [{
+        content: {
+          parts: [{ text: text }]
+        }
+      }]
+    };
+
+    return { statusCode: 200, headers, body: JSON.stringify(finalResponse) };
 
   } catch (error) {
     console.error("Erro no proxy:", error.message);
