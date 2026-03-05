@@ -1,4 +1,4 @@
-// Código FINALÍSSIMO para a função 'api.js' no Netlify
+// Código FINALÍSSIMO (v2) para a função 'api.js' no Netlify
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -14,8 +14,8 @@ exports.handler = async (event) => {
     const { prompt } = JSON.parse(event.body);
     const apiKey = process.env.GEMINI_API_KEY;
     
-    // URL CORRIGIDA COM O MODELO E MÉTODO CORRETOS
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:streamGenerateContent?key=${apiKey}`;
+    // A URL MAIS BÁSICA E ESTÁVEL
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
     const geminiResponse = await fetch(url, {
       method: 'POST',
@@ -23,28 +23,15 @@ exports.handler = async (event) => {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] } ),
     });
 
-    const responseText = await geminiResponse.text();
+    const responseBody = await geminiResponse.text();
 
     if (!geminiResponse.ok) {
-      console.error("Erro da API Gemini:", responseText);
-      return { statusCode: geminiResponse.status, headers, body: responseText };
+      console.error("Erro da API Gemini:", responseBody);
+      return { statusCode: geminiResponse.status, headers, body: responseBody };
     }
-    
-    // A resposta de 'streamGenerateContent' é um JSON um pouco diferente.
-    // Precisamos processá-lo para extrair o texto.
-    const parts = JSON.parse(responseText.replace(/^\[|\]$/g, '')); // Remove colchetes de array
-    const text = parts.candidates[0].content.parts[0].text;
 
-    // Retornamos no formato que o frontend espera
-    const finalResponse = {
-      candidates: [{
-        content: {
-          parts: [{ text: text }]
-        }
-      }]
-    };
-
-    return { statusCode: 200, headers, body: JSON.stringify(finalResponse) };
+    // A resposta de generateContent já vem no formato correto, só precisamos repassá-la
+    return { statusCode: 200, headers, body: responseBody };
 
   } catch (error) {
     console.error("Erro no proxy:", error.message);
