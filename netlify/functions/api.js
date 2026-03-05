@@ -1,4 +1,4 @@
-// Código FINALÍSSIMO (v2) para a função 'api.js' no Netlify
+// Código FINALÍSSIMO (v3) para a função 'api.js' no Netlify
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -14,8 +14,8 @@ exports.handler = async (event) => {
     const { prompt } = JSON.parse(event.body);
     const apiKey = process.env.GEMINI_API_KEY;
     
-    // A URL MAIS BÁSICA E ESTÁVEL
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+    // URL CORRIGIDA COM O NOME DE MODELO QUE A SUA CONTA SUPORTA
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
     const geminiResponse = await fetch(url, {
       method: 'POST',
@@ -30,7 +30,6 @@ exports.handler = async (event) => {
       return { statusCode: geminiResponse.status, headers, body: responseBody };
     }
 
-    // A resposta de generateContent já vem no formato correto, só precisamos repassá-la
     return { statusCode: 200, headers, body: responseBody };
 
   } catch (error) {
