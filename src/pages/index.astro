@@ -1,19 +1,751 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roteiros em Lote - Oração </title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel para JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fontes e Estilos -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .animate-progress { animation: progress 2s infinite linear; transform-origin: 0% 50%; }
+        @keyframes progress { 0% { transform: scaleX(0); } 50% { transform: scaleX(0.5); } 100% { transform: scaleX(1); } }
+
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ÍCONES SVG ---
+        const Icons = {
+            PenTool: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>,
+            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.35a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+            Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+            FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>,
+            CheckCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            Loader2: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
+            Save: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+            RefreshCw: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Globe: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>,
+            Type: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>,
+            Zap: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Feather: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" x2="2" y1="8" y2="22"/><line x1="17.5" x2="9" y1="15" y2="15"/></svg>,
+            Layers: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+            Subtitle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 12h8"/><path d="M8 9h8"/></svg>
+        };
+
+        // --- CONSTANTES ---
+        const DEFAULT_INSTRUCTIONS = `Estrutura base da narrativa:
+# IDENTITY (ROLE)
+Você é o "Escriba da Milícia Celeste", um Roteirista Teológico Sênior especializado em conteúdo devocional católico de Longa Duração para o canal "Escudo de São Miguel". Você fala com autoridade profética, profundidade emocional e precisão teológica.
+
+# PROJECT SETTINGS (CRITICAL)
+- **TARGET LANGUAGE:** {{TARGET_LANGUAGE}} (Ex: Portuguese (Brazil), Spanish (Mexico), Italian, English)
+- **TOTAL LENGTH:** 14 Blocks (~500 words each). Total target: 4000 words.
+- **PERSPECTIVE:** 1st Person ("Eu ordeno", "Io comando", "I command").
+
+# CRITICAL RULES (SAFETY PROTOCOLS)
+1. **LANGUAGE ISOLATION (ZERO MIXING):**
+   - Escreva ESTRITAMENTE no idioma definido em {{TARGET_LANGUAGE}}.
+   - NUNCA misture idiomas.
+   - **Para Espanhol:** Use Espanhol Latino-Americano (México). NUNCA use "Vosotros". Use "Tú" para proximidade ou "Usted" para autoridade.
+   - **Para Português:** Use Português do Brasil (PT-BR).
+   - Use a "TRANSLATION MATRIX" abaixo para converter os termos obrigatórios corretamente.
+
+2. **FORMATTING FOR TTS (TEXT-TO-SPEECH):**
+   - **FORBIDDEN:** Do NOT use bolding ('**text**'), italics ('*text*'), or headers ('#'). Keep the text plain.
+   - **REQUIRED:** Use ellipses (...) frequently to indicate pauses, breathing, and meditation.
+   - **STRUCTURE:** Write strictly in paragraphs.
+
+3. **CLEAN OUTPUT (NO HEADERS):**
+   - **CRITICAL:** Do NOT write headers like "BLOCK 1", "THEOLOGY OF TEARS", or "CONCLUSION".
+   - **PURE SPEECH:** Output ONLY the spoken text. The result must be ready to copy/paste directly into ElevenLabs without editing.
+
+# TRANSLATION MATRIX (VOCABULARY GUIDE)
+Consulte esta tabela e use APENAS a coluna correspondente ao {{TARGET_LANGUAGE}}:
+
+| CONCEITO | ENGLISH | PORTUGUÊS (BR) | ESPAÑOL (MX) | ITALIANO |
+| :--- | :--- | :--- | :--- | :--- |
+| **Title** | Prince of the Celestial Militia | Príncipe da Milícia Celeste | Príncipe de la Milicia Celestial | Principe della Milizia Celeste |
+| **War Cry** | Who is like God? (Quis ut Deus?) | Quem como Deus? (Quis ut Deus?) | ¿Quién como Dios? (Quis ut Deus?) | Chi come Dio? (Quis ut Deus?) |
+| **Sacred Object** | Holy Linen / Handkerchief | Santo Lenço | **Santo Lienzo** | Sacro Lino / Fazzoletto |
+| **Weapon 1** | Sword of Fire | Espada de Fogo | Espada de Fuego | Spada di Fuoco |
+| **Weapon 2** | Scales of Justice | Balança da Justiça | Balanza de la Justicia | Bilancia della Giustizia |
+| **Action** | Cast into Hell | Precipitai no inferno | Precipita en el infierno | Precipita all'inferno |
+| **Protection** | Wings of Protection | Asas de Proteção | Alas de Protección | Ali di Protezione |
+| **Barrier 1** | Wall of Fire | Muralha de Fogo | Muralla de Fuego | Muro di Fuoco |
+| **Barrier 2** | Glass Dome | Cúpula de Vidro | Cúpula de Cristal | Cupola di Vetro |
+| **State** | Spiritual Exhaustion | Cansaço Espiritual | Agotamiento Espiritual | Stanchezza Spirituale |
+| **Secret Decree** | I am the inviolable property of the Most High | Eu sou propriedade inviolável do Altíssimo | Soy propiedad inviolable del Altísimo | Io sono propriedade inviolabile dell'Altissimo |
+
+# INPUT DATA
+- **OBJETO DE FÉ:** {{OBJETO}} (If empty, assume: "Right hand over heart" translated to target language)
+- **DOR DO PÚBLICO:** {{DOR}} (If empty, assume: "Spiritual stagnation" translated to target language)
+
+# NARRATIVE BLUEPRINT (14 BLOCKS)
+
+Siga esta estrutura narrativa sequencialmente, mas NÃO ESCREVA OS TÍTULOS DOS BLOCOS no output final:
+
+**BLOCK 1: THE ALARM**
+Abertura fria ("Stop everything..."). Leitura fria dos sintomas da {{DOR}}.
+
+**BLOCK 2: THE THEOLOGY OF TEARS**
+Explique que Jesus chorou ao ver o futuro da pessoa. Introduza Miguel e o **Sacred Object**.
+
+**BLOCK 3: PREPARATION & CONSECRATION**
+Instrução para tocar no {{OBJETO}}. A chegada do Arcanjo. O toque da Espada.
+
+**BLOCK 4: THE BATTLE BEGINS - MINDSET**
+Quebrar procrastinação e dúvida mental.
+
+**BLOCK 5: THE BATTLE - ANCESTRY**
+Quebrar maldições geracionais.
+
+**BLOCK 6: THE BATTLE - FINANCE**
+Quebrar escassez e dívidas. Uso da Balança.
+
+**BLOCK 7: THE BATTLE - FAMILY & HOME**
+Limpar a casa e proteger filhos.
+
+**BLOCK 8: THE BATTLE - HEALTH (BODY)**
+Expulsar doenças físicas de origem espiritual.
+
+**BLOCK 9: THE BATTLE - EXTERNAL ATTACKS**
+Quebrar inveja e traição.
+
+**BLOCK 10: THE CLIMAX (THE ACCUSER)**
+Confronto final contra o Acusador. Comando "Cast into Hell".
+
+**BLOCK 11: THE GREAT SILENCE**
+O silêncio pós-guerra. A sensação de paz. A Cúpula se fechando.
+
+**BLOCK 12: THE RESTORATION**
+O preenchimento com o Espírito Santo (alegria, força).
+
+**BLOCK 13: THE SEALING (THE SECRET DECREE)**
+Revelação da frase secreta (Use a tradução da Matriz). Instrução para repetir 7 vezes. Pequeno Exorcismo.
+
+**BLOCK 14: THE MISSION (Call to Action)**
+Comando para compartilhar com exatas 7 pessoas. Benção final.
+
 ---
-import Layout from '../layouts/Layout.astro';
-import Markdown from '../components/Markdown.astro';
 
-const explainer = `
-An Astro website can go way beyond static pages - on the right platform.
+**INSTRUÇÃO DE GERAÇÃO FINAL:**
+Escreva o **ROTEIRO COMPLETO** agora no idioma {{TARGET_LANGUAGE}}.
+**IMPORTANTE:** Entregue APENAS o texto falado. Não inclua títulos, notas ou cabeçalhos em inglês. O texto deve ser contínuo e fluido.`;
 
-Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
-Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
-`;
----
+        // Capacidade MAXIMA de palavras que confiamos que a IA gera bem por requisição
+        const MAX_WORDS_PER_PART_CAPACITY = 500;
+        const MAX_CONCURRENT_PARTS = 5;
 
-<Layout title="Welcome to Astro.">
-    <h1 class="mb-10">Netlify Platform Starter for Astro</h1>
-    <Markdown content={explainer} class="mb-10 text-lg" />
-    <p>
-        <a href="https://docs.netlify.com/frameworks/astro/" class="btn btn-lg sm:min-w-64">Read the Docs</a>
-    </p>
-</Layout>
+        // --- COMPONENTE PRINCIPAL ---
+        function App() {
+            const [activeTab, setActiveTab] = useState('config');
+            
+            const [person, setPerson] = useState('Terceira Pessoa');
+            const [language, setLanguage] = useState('Português');
+            const [narrativeStyle, setNarrativeStyle] = useState('Drama');
+            const [wordCount, setWordCount] = useState(7000);
+            
+            const [instructions, setInstructions] = useState(() => {
+                const saved = localStorage.getItem('roteiros_pro_instructions');
+                return saved !== null ? saved : DEFAULT_INSTRUCTIONS;
+            });
+
+            const [titlesInput, setTitlesInput] = useState('');
+            const [scripts, setScripts] = useState([]);
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [errorMsg, setErrorMsg] = useState('');
+
+            const processingRef = useRef(false);
+
+            // Carrega ao montar para garantir
+            useEffect(() => {
+                const saved = localStorage.getItem('roteiros_pro_instructions');
+                if (saved) setInstructions(saved);
+            }, []);
+
+            // --- FUNÇÃO DE LIMPEZA ---
+            const cleanText = (text) => {
+                if (!text) return "";
+                let cleaned = text;
+                cleaned = cleaned.replace(/^\[.*\]/gm, '');
+                cleaned = cleaned.replace(/^#+\s*.*/gm, '');
+                cleaned = cleaned.replace(/^\*\*.*\*\*$/gm, '');
+                cleaned = cleaned.replace(/^(Hook|Introdução|Cena \d+|Música|Efeitos Sonoros|Som ambiente|Narrador|Locutor|Corta para):/gmi, '');
+                cleaned = cleaned.replace(/^(PARTE|PART)\s+\d+.*$/gmi, '');
+                cleaned = cleaned.replace(/\((Som|Música|Ruído|Efeito|Silêncio|Respiração|Corta para|Fade|Cenário)[^)]*\)/gi, '');
+                cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+                return cleaned.trim();
+            };
+
+            // --- GERADOR DE SRT ---
+            const gerarSRT = (textos) => {
+                if (!textos) return "";
+                let texto_final = "";
+                let contador = 0;
+                let contador2 = 1;
+                let i_saltar = -1;
+                let previous_min = '00';
+                let previous_sec = '00';
+                let previous_hour = '00';
+                const intervalo = 30; // Duração fixa de 30s conforme solicitado
+
+                // Substituições básicas para quebrar linhas como no PHP
+                let texto = cleanText(textos);
+                texto = texto.split('. ').join(".\n");
+                texto = texto.split('— ').join("— \n");
+                texto = texto.split('? ').join("? \n");
+                texto = texto.split('?"').join("?\"\n");
+                texto = texto.split("?'").join("?'\n");
+
+                // Filtra linhas vazias
+                const lines = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+                for (let i = 0; i < lines.length; i++) {
+                    if (i === i_saltar || i === i_saltar + 1) continue; // Pula se já foi usado em merge anterior (ajuste simples)
+                    if (i === i_saltar) continue;
+
+                    const currentLine = lines[i];
+                    
+                    // Cálculo de tempo
+                    let tempo_final = contador + intervalo;
+                    
+                    let min = Math.floor(tempo_final / 60);
+                    let hour = Math.floor(min / 60);
+                    min = min % 60;
+                    let sec = tempo_final % 60;
+
+                    let secStr = sec.toString().padStart(2, '0');
+                    let minStr = min.toString().padStart(2, '0');
+                    let hourStr = hour.toString().padStart(2, '0');
+
+                    let timeString = `${previous_hour}:${previous_min}:${previous_sec},000 --> ${hourStr}:${minStr}:${secStr},000`;
+
+                    // Lógica de Agrupamento (Port do PHP)
+                    // Verifica se a próxima linha existe e se ambas são "curtas" (< 200 chars)
+                    if (lines[i+1] && currentLine.length < 200 && lines[i+1].length < 200) {
+                        i_saltar = i + 1; // Pulará a próxima no loop principal
+                        
+                        // Verifica se existe uma terceira linha e se estamos no final (regra específica do PHP)
+                        if ((i + 1) === (lines.length - 2) && lines[i+2] && lines[i+2].length < 100) {
+                            // Merge 3 linhas
+                            texto_final += `${contador2}\n${timeString}\n${currentLine}\n${lines[i+1]}\n${lines[i+2]}\n\n`;
+                            i = lines.length; // Encerra o loop (simulando o break do PHP)
+                        } else {
+                            // Merge 2 linhas padrão
+                            texto_final += `${contador2}\n${timeString}\n${currentLine}\n${lines[i+1]}\n\n`;
+                        }
+                    } else {
+                        // Lógica else (Linha única ou final)
+                        if (i === lines.length - 2 && lines[i+1] && lines[i+1].length < 100) {
+                             // Pega a última linha se for curta
+                             texto_final += `${contador2}\n${timeString}\n${currentLine}\n${lines[i+1]}\n\n`;
+                             i = lines.length; // Encerra
+                        } else {
+                             // Linha normal
+                             texto_final += `${contador2}\n${timeString}\n${currentLine}\n\n`;
+                        }
+                    }
+
+                    // Atualiza tempos anteriores para o próximo loop
+                    previous_min = minStr;
+                    previous_sec = secStr;
+                    previous_hour = hourStr;
+                    
+                    contador = tempo_final;
+                    contador2++;
+                }
+
+                return texto_final;
+            };
+
+            const countWords = (text) => {
+                if (!text) return 0;
+                return text.trim().split(/\s+/).length;
+            };
+
+            const resetInstructions = () => {
+                if (confirm('Resetar instruções para o padrão?')) {
+                    setInstructions(DEFAULT_INSTRUCTIONS);
+                    localStorage.setItem('roteiros_pro_instructions', DEFAULT_INSTRUCTIONS);
+                }
+            };
+
+            const languages = [
+                'Português', 'Inglês', 'Espanhol', 'Alemão', 'Italiano'
+            ];
+            
+            const persons = ['Primeira Pessoa', 'Terceira Pessoa'];
+            
+            const narrativeStyles = [
+                'Drama', 'Suspense', 'Terror', 'Emoção / Emotivo', 'Notícia (Jornalístico)', 
+                'Comédia / Humor', 'Motivacional / Inspirador', 'Investigativo / Mystery',
+                'Educativo / Didático', 'Storytelling Pessoal', 'Curiosidade / Fatos', 'Ação / Dinâmico'
+            ];
+
+            // --- API GEMINI (Texto) ---
+            const generatePartWithGemini = async (scriptData, partIndex, totalParts, targetWords) => {
+                // A URL do seu proxy Netlify que já está funcionando
+                const proxyUrl = "/.netlify/functions/api"; // Apenas o caminho, sem o domínio
+
+
+                // --- Definição do Contexto da Parte ---
+                let partContext = "";
+                if (partIndex === 1) {
+                    partContext = "Início da narrativa. Estabeleça o gancho e a fundação do tema.";
+                } else if (partIndex === totalParts) {
+                    partContext = "Clímax e Conclusão definitiva. Encerre todos os pontos.";
+                } else {
+                    partContext = "Desenvolvimento denso e detalhado. Aprofunde os tópicos anteriores sem concluir.";
+                }
+
+                // --- Definição do Prompt Completo ---
+                const fullPrompt = `
+                  [TAREFA PRINCIPAL]
+                  Você é um motor de Text-to-Speech humano. Sua tarefa é gerar texto EXTENSO, DENSO e DETALHADO para ser lido. Escreva o máximo possível sobre o tema. Não economize palavras. PROIBIDO: Títulos, metadados, instruções de som ou direções de palco.
+
+                  [DETALHES DA TAREFA ATUAL]
+                  Escreva a PARTE ${partIndex} de ${totalParts} para o tema: "${scriptData.title}".
+                  
+                  [OBJETIVO DESTA PARTE]
+                  ${partContext}
+                  
+                  [INSTRUÇÕES ESTRUTURAIS]
+                  ${scriptData.instructions}
+                  
+                  [CONFIGURAÇÕES]
+                  - Idioma: ${scriptData.language}
+                  - Narrativa: ${scriptData.person}
+                  - Estilo: ${scriptData.narrativeStyle}
+                  
+                  [META DE EXTENSÃO]
+                  Escreva APROXIMADAMENTE ${targetWords} palavras nesta parte. Seja prolixo, detalhista e exaustivo.
+                  
+                  [REGRAS DE SAÍDA]
+                  Apenas o texto da narração. Texto corrido.
+                `;
+
+                // --- LÓGICA DE TENTAR NOVAMENTE (ATÉ 3 VEZES) ---
+                for (let tentativa = 1; tentativa <= 3; tentativa++) {
+                    try {
+                        console.log(`Iniciando tentativa ${tentativa} para a Parte ${partIndex} do tema "${scriptData.title}"...`);
+                        
+                        const response = await fetch(proxyUrl, {
+                            method: 'POST',
+                            body: JSON.stringify({ prompt: fullPrompt }) 
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            // Se o erro for de servidor ocupado (503) ou timeout (504), tenta novamente
+                            if (response.status === 503 || response.status === 504) {
+                                console.warn(`Erro ${response.status} na tentativa ${tentativa}. Tentando novamente em 5 segundos...`);
+                                await new Promise(res => setTimeout(res, 5000)); // Espera 5s
+                                continue; // Pula para a próxima iteração do loop (próxima tentativa)
+                            }
+                            // Para outros erros, lança a exceção imediatamente
+                            throw new Error(`Erro do Proxy (${response.status}): ${errorText}`);
+                        }
+
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                        
+                        if (!text) {
+                            // Se a resposta vier sem texto, tenta novamente
+                            console.warn(`Resposta veio sem texto na tentativa ${tentativa}. Tentando novamente...`);
+                            throw new Error("Proxy retornou uma resposta vazia.");
+                        }
+
+                        console.log(`SUCESSO na tentativa ${tentativa} para a Parte ${partIndex}!`);
+                        return cleanText(text); // SUCESSO! Sai da função com o texto.
+
+                    } catch (error) {
+                        console.error(`Falha na tentativa ${tentativa} para a Parte ${partIndex}:`, error);
+                        if (tentativa === 3) {
+                            // Se for a última tentativa, retorna a mensagem de erro final
+                            return `[ERRO FINAL NA PARTE ${partIndex}: ${error.message}]`;
+                        }
+                        // Espera um pouco antes de tentar novamente
+                        await new Promise(res => setTimeout(res, 5000)); 
+                    }
+                }
+            };
+
+            const handleStartCreation = () => {
+                localStorage.setItem('roteiros_pro_instructions', instructions);
+
+                const titles = titlesInput.split('\n').filter(t => t.trim() !== '');
+                if (titles.length === 0) {
+                    setErrorMsg("Por favor, insira pelo menos um título.");
+                    return;
+                }
+                setErrorMsg('');
+                
+                const partsNeeded = Math.max(1, Math.ceil(wordCount / MAX_WORDS_PER_PART_CAPACITY));
+                const targetWordsPerPart = Math.floor(wordCount / partsNeeded); 
+
+                const initialScripts = titles.map((title, index) => ({
+                    id: index,
+                    title: title.trim(),
+                    status: 'pending',
+                    content: '',
+                    totalParts: partsNeeded,
+                    targetPerPart: targetWordsPerPart,
+                    completedParts: 0,
+                    partsData: new Array(partsNeeded).fill(null)
+                }));
+
+                setScripts(initialScripts);
+                setActiveTab('results');
+                setIsProcessing(true);
+                processingRef.current = true;
+            };
+
+            useEffect(() => {
+                if (!isProcessing) return;
+
+                const processQueue = async () => {
+                    const currentScriptIndex = scripts.findIndex(s => s.status === 'pending');
+
+                    if (currentScriptIndex === -1) {
+                        const isAnyProcessing = scripts.some(s => s.status === 'processing');
+                        if (!isAnyProcessing) {
+                            setIsProcessing(false);
+                            processingRef.current = false;
+                        }
+                        return;
+                    }
+
+                    setScripts(prev => {
+                        const newArr = [...prev];
+                        newArr[currentScriptIndex].status = 'processing';
+                        return newArr;
+                    });
+
+                    const currentScript = scripts[currentScriptIndex];
+                    const totalParts = currentScript.totalParts;
+                    const partsIndices = Array.from({length: totalParts}, (_, i) => i + 1);
+                    
+                    for (let i = 0; i < partsIndices.length; i += MAX_CONCURRENT_PARTS) {
+                        const batch = partsIndices.slice(i, i + MAX_CONCURRENT_PARTS);
+                        
+                        await Promise.all(batch.map(async (partNum) => {
+                            const partContent = await generatePartWithGemini(
+                                {
+                                    title: currentScript.title,
+                                    language,
+                                    person,
+                                    narrativeStyle,
+                                    instructions
+                                },
+                                partNum,
+                                totalParts,
+                                currentScript.targetPerPart 
+                            );
+
+                            setScripts(prev => {
+                                const newArr = [...prev];
+                                const script = newArr[currentScriptIndex];
+                                script.partsData[partNum - 1] = partContent;
+                                script.completedParts += 1;
+                                script.content = script.partsData.filter(p => p !== null).join('\n\n');
+                                return newArr;
+                            });
+                        }));
+                    }
+
+                    setScripts(prev => {
+                        const newArr = [...prev];
+                        newArr[currentScriptIndex].status = 'completed';
+                        return newArr;
+                    });
+                };
+
+                const isAnyScriptProcessing = scripts.some(s => s.status === 'processing');
+                if (!isAnyScriptProcessing && processingRef.current) {
+                    processQueue();
+                }
+
+            }, [scripts, isProcessing]);
+
+            const copyToClipboard = (text) => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            };
+
+            const downloadTxt = (filename, text) => {
+                const safeName = filename.replace(/[^a-z0-9áàâãéèêíïóôõöúçñ ]/gi, '_').trim();
+                const element = document.createElement("a");
+                const file = new Blob([text], {type: 'text/plain'});
+                element.href = URL.createObjectURL(file);
+                element.download = `${safeName || 'roteiro'}.txt`;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            };
+
+            const downloadSRT = (filename, text) => {
+                const srtContent = gerarSRT(text);
+                const safeName = filename.replace(/[^a-z0-9áàâãéèêíïóôõöúçñ ]/gi, '_').trim();
+                const element = document.createElement("a");
+                const file = new Blob([srtContent], {type: 'text/plain'});
+                element.href = URL.createObjectURL(file);
+                element.download = `${safeName || 'legendas'}.srt`;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            };
+
+            return (
+                <div className="pb-20">
+                    <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-20">
+                        <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg">
+                                    <Icons.PenTool />
+                                </div>
+                                <h1 className="text-xl font-bold text-white flex flex-wrap items-baseline gap-1">
+                                    <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Roteiros em Lote</span>
+                                    <span className="text-sm font-normal text-gray-500">criado por</span>
+                                    <a href="https://youtube.com/@AndersonMak" target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+                                        @AndersonMak
+                                    </a>
+                                </h1>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <button onClick={() => setActiveTab('config')} 
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === 'config' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
+                                    <Icons.Settings /> Configurar
+                                </button>
+                                <button onClick={() => setActiveTab('results')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === 'results' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
+                                    <Icons.FileText /> Resultados
+                                    {scripts.length > 0 && <span className="bg-gray-800 px-2 py-0.5 rounded-full text-xs">{scripts.filter(s => s.status === 'completed').length} / {scripts.length}</span>}
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-5xl mx-auto px-4 py-8">
+                        {activeTab === 'config' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fadeIn">
+                                <div className="lg:col-span-1 space-y-6">
+                                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                                        <h2 className="text-lg font-semibold mb-4 text-indigo-400 flex items-center gap-2">
+                                            <Icons.Settings /> Parâmetros
+                                        </h2>
+                                        
+                                        <div className="mb-4">
+                                            <label className="block text-sm text-gray-400 mb-1">Perspectiva</label>
+                                            <select value={person} onChange={e => setPerson(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 outline-none focus:border-indigo-500">
+                                                {persons.map(p => <option key={p} value={p}>{p}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <label className="block text-sm text-gray-400 mb-1">Idioma</label>
+                                            <select value={language} onChange={e => setLanguage(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 outline-none focus:border-indigo-500">
+                                                {languages.map(l => <option key={l} value={l}>{l}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <label className="block text-sm text-gray-400 mb-1">Estilo Narrativo</label>
+                                            <div className="relative">
+                                                <select value={narrativeStyle} onChange={e => setNarrativeStyle(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 outline-none focus:border-indigo-500 appearance-none">
+                                                    {narrativeStyles.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <div className="absolute right-3 top-3 pointer-events-none text-gray-500"><Icons.Feather /></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <label className="block text-sm text-gray-400 mb-1">Meta de Palavras Total</label>
+                                            <div className="relative">
+                                                <input type="number" value={wordCount} onChange={e => setWordCount(parseInt(e.target.value))} className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 outline-none focus:border-indigo-500" />
+                                                <span className="text-xs text-gray-500 mt-1 block">
+                                                    Será dividido em aprox. {Math.ceil(wordCount / MAX_WORDS_PER_PART_CAPACITY)} partes de {Math.floor(wordCount / Math.ceil(wordCount / MAX_WORDS_PER_PART_CAPACITY))} palavras.
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button onClick={handleStartCreation} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95">
+                                        <div className="fill-current"><Icons.Play /></div> INICIAR GERAÇÃO
+                                    </button>
+                                    
+                                    {errorMsg && <div className="text-red-400 text-sm bg-red-900/20 p-3 rounded-lg border border-red-900">{errorMsg}</div>}
+                                </div>
+
+                                <div className="lg:col-span-2 space-y-6">
+                                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="block text-lg font-semibold text-indigo-400">Instruções de Estrutura</label>
+                                            <button onClick={resetInstructions} className="text-xs text-gray-500 hover:text-indigo-400 underline">Resetar</button>
+                                        </div>
+                                        <textarea value={instructions} onChange={e => setInstructions(e.target.value)} className="w-full h-48 bg-gray-950 border border-gray-700 rounded-lg p-3 outline-none focus:border-indigo-500 resize-none text-sm font-mono leading-relaxed" placeholder="Instruções..."></textarea>
+                                    </div>
+
+                                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col h-80">
+                                        <div className="flex justify-between mb-2">
+                                            <label className="block text-lg font-semibold text-indigo-400">Títulos (Um por linha)</label>
+                                            <span className="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400">{titlesInput.split('\n').filter(t => t.trim()).length} itens</span>
+                                        </div>
+                                        <textarea value={titlesInput} onChange={e => setTitlesInput(e.target.value)} className="w-full flex-grow bg-gray-950 border border-gray-700 rounded-lg p-3 outline-none focus:border-indigo-500 font-mono text-sm" placeholder="Como Ganhar Dinheiro&#10;Dicas de Viagem&#10;Receitas Fit"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'results' && (
+                            <div className="animate-fadeIn max-w-4xl mx-auto space-y-6">
+                                {scripts.length === 0 ? (
+                                    <div className="text-center py-20 opacity-50">
+                                        <div className="inline-block p-4 bg-gray-800 rounded-full mb-4"><Icons.FileText /></div>
+                                        <h3 className="text-xl font-bold">Nenhum roteiro na fila</h3>
+                                        <p className="mt-2">Configure e inicie a geração.</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {isProcessing && (
+                                            <div className="bg-indigo-900/30 border border-indigo-500/30 rounded-lg p-4 mb-6 flex items-center justify-between animate-fadeIn">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="animate-spin text-indigo-400"><Icons.RefreshCw /></div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-indigo-100">Gerando em Partes</h4>
+                                                        <p className="text-xs text-indigo-300">
+                                                            Processando 1 roteiro por vez, até 5 partes simultâneas.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs bg-indigo-500/20 px-2 py-1 rounded text-indigo-300 border border-indigo-500/20">
+                                                     Acelerado
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-6">
+                                        {scripts.map(script => (
+                                            <div key={script.id} className={`rounded-xl border overflow-hidden transition-all duration-300 flex flex-col md:flex-row ${
+                                                script.status === 'processing' ? 'bg-gray-900 border-indigo-500 shadow-lg ring-1 ring-indigo-500 scale-[1.01]' : 
+                                                script.status === 'completed' ? 'bg-gray-900 border-green-900/50' :
+                                                'bg-gray-900/50 border-gray-800 opacity-70'
+                                            }`}>
+                                                <div className="flex-grow flex flex-col min-w-0">
+                                                    <div className="p-4 bg-gray-800/50 border-b border-gray-700 flex justify-between items-center">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                                                                script.status === 'completed' ? 'bg-green-500/20 text-green-400' : 
+                                                                script.status === 'processing' ? 'bg-indigo-500/20 text-indigo-400' : 
+                                                                'bg-gray-700 text-gray-400'
+                                                            }`}>
+                                                                {script.status === 'completed' ? <Icons.CheckCircle /> : 
+                                                                 script.status === 'processing' ? <div className="animate-spin"><Icons.Loader2 /></div> : 
+                                                                 <Icons.Layers />}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className={`font-semibold ${script.status === 'processing' ? 'text-indigo-200' : 'text-gray-200'}`}>{script.title}</h3>
+                                                                {script.status === 'processing' && (
+                                                                    <p className="text-xs text-indigo-400">Gerando parte {script.completedParts + 1} de {script.totalParts}...</p>
+                                                                )}
+                                                                {script.status === 'pending' && <p className="text-xs text-gray-500">Na fila</p>}
+                                                            </div>
+                                                        </div>
+                                                        {script.status === 'completed' && (
+                                                            <div className="flex gap-1">
+                                                                <button onClick={() => downloadSRT(script.title, script.content)} className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors" title="Salvar .srt">
+                                                                    <Icons.Subtitle />
+                                                                </button>
+                                                                <button onClick={() => downloadTxt(script.title, script.content)} className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors" title="Salvar .txt">
+                                                                    <Icons.Save />
+                                                                </button>
+                                                                <button onClick={() => copyToClipboard(script.content)} className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors" title="Copiar">
+                                                                    <Icons.Copy />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="flex-grow p-0 relative">
+                                                        {script.status === 'processing' && (
+                                                            <div className="p-10 flex flex-col items-center justify-center text-gray-500 gap-4 h-full">
+                                                                <div className="w-full max-w-xs bg-gray-800 rounded-full h-2.5">
+                                                                    <div className="bg-indigo-500 h-2.5 rounded-full transition-all duration-500" style={{width: `${(script.completedParts / script.totalParts) * 100}%`}}></div>
+                                                                </div>
+                                                                <p className="text-sm">Construindo narrativa: {script.completedParts}/{script.totalParts} partes concluídas</p>
+                                                            </div>
+                                                        )}
+                                                        {script.status === 'pending' && (
+                                                            <div className="p-6 text-center text-gray-600 italic text-sm">
+                                                                Aguardando processamento...
+                                                            </div>
+                                                        )}
+                                                        {script.status === 'completed' && (
+                                                            <div className="relative h-full flex flex-col">
+                                                                <textarea 
+                                                                    value={script.content} 
+                                                                    onChange={(e) => {
+                                                                        const newVal = e.target.value;
+                                                                        setScripts(prev => prev.map(s => s.id === script.id ? { ...s, content: newVal } : s));
+                                                                    }}
+                                                                    className="w-full h-96 bg-gray-950 border-none p-4 text-gray-300 font-mono text-sm resize-y focus:ring-0 mb-8"
+                                                                ></textarea>
+                                                                <div className="absolute bottom-0 left-0 right-0 p-2 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex justify-between px-4">
+                                                                    <span>{countWords(script.content)} palavras totais ({script.totalParts} partes unidas)</span>
+                                                                    <span>Gerado por @AndersonMak AI</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
